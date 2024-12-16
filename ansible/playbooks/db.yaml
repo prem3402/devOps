@@ -1,0 +1,32 @@
+---
+- name: dbserver setup
+  hosts: dbservers
+  become: yes
+  tasks:
+    - name: install mariadb-server
+      ansible.builtin.yum:
+        name: mariadb-server
+        state: present
+    - name: install py-mysql
+      ansible.builtin.yum:
+        name: python3-PyMySQL
+        state: present
+    - name: enable mariadb-server
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: yes
+
+    - name: create database employees
+      community.mysql.mysql_db:
+        name: employees
+        state: present
+        login_unix_socket: /var/lib/mysql/mysql.sock
+
+    - name: Create database user with name 'prem' and password '12345' with all database privileges
+      community.mysql.mysql_user:
+        name: prem
+        password: 12345
+        priv: "*.*:ALL"
+        state: present
+        login_unix_socket: /var/lib/mysql/mysql.sock
