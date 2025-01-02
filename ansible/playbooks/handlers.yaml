@@ -1,0 +1,74 @@
+  ---
+- name: Provisioning servers
+  hosts: all
+  become: yes
+  tasks:
+    - name: install ntp service on centos
+      yum:
+        name: "{{item}}"
+        state: present
+      when: ansible_distribution == "CentOS"
+      loop:
+        - chrony
+        - wget
+        - zip
+        - unzip
+    - name: install ntp service on ubuntu
+      apt:
+        name: "{{item}}"
+        state: present
+        update_cache: yes
+      when: ansible_distribution == "Ubuntu"
+      loop:
+        - ntp
+        - wget
+        - zip
+        - unzip
+        - docker
+    - name: start and enable ntp service on centos
+      service:
+        name: chronyd
+        state: started
+        enabled: yes
+      when: ansible_distribution == "CentOS"
+    - name: start and enable ntp service on ubuntu
+      service:
+        name: ntp
+        state: started
+        enabled: yes
+      when: ansible_distribution == "Ubuntu"
+
+  - name: Banner File
+      copy:
+        content: "# this server is managed by ansible"
+        dest: /etc/motd
+
+    - name: Deploy ntp config file on centos
+      template:
+        src: templates/ntpconfig_centos
+        dest: /etc/chrony.conf
+        backup: yes
+      when: ansible_distribution == "CentOS"
+      notify: restart and enable ntp service on centos
+
+    - name: Deploy ntp config file on ubuntu
+      template:
+        src: templates/ntpconfig_ubuntu
+        dest: /etc/ntpsec/ntp.conf
+        backup: yes
+      when: ansible_distribution == "Ubuntu"
+      notify: restart and enable ntp service on ubuntu
+  handlers:
+    - name: restart and enable ntp service on centos
+      service:
+        name: chronyd
+        state: restarted
+        enabled: yes
+      when: ansible_distribution == "CentOS"
+
+    - name: restart and enable ntp service on ubuntu
+      service:
+        name: ntp
+        state: restarted
+        enabled: yes
+      when: ansible_distribution == "Ubuntu"
